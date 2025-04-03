@@ -11,15 +11,15 @@ if __name__ == '__main__':
     answer = hhg.Tool(
         name = "answer",
         use_requirements = "Used **always**, even if prompt does not specify it",
-        purposes = "This is where you write your main answer",
-        description = "The tool is needed to communicate the result of your activity to the user"
+        purposes = "This is where you write your main text answer or image description if you are using `image_gen`",
+        description = "The tool is needed to communicate the TEXT result of your activity to the user"
     )
 
     image_gen = hhg.Tool(
         name = "image_gen",
         use_requirements = "Used when you want to generate an image",
         purposes = "This tool is used to generate images based on provided requests",
-        description = "The tool is needed to create static visual content. It streectly need to be set to only English. It is a prompt for image generation, be precise",
+        description = "The tool is needed to create static visual content. It streectly need to be set to only English. It is a prompt for image generation, be precise. Do not include words \"Generate an image ...\" in the request",
         subtools=[
             hhg.SubTool(
                 name = "image_resolution",
@@ -30,15 +30,25 @@ if __name__ == '__main__':
         ]
     )
 
+    chain_next = hhg.Tool(
+        name = "answer_chain",
+        use_requirements = "Used if you need additional processing of your current answer or if you need to develop your answer, use tools to process already used tools",
+        purposes = "This tool is used to chain answers together",
+        description = "The tool is needed to create response based on provided answers"
+    )
+
     system_prompt = hhg.Compiler.compile(
         base = basics,
-        tools = [answer, image_gen]
+        tools = [answer, image_gen, chain_next]
     )
     
     conversation.system_query = system_prompt
 
+    with open("./sysprompt.txt", 'w') as f:
+        f.write(conversation.system_query)
+
     status, ans = conversation.ask_text(
-        hhg.Salt.add_salt("Сгенерируй изображение машины"),
+        hhg.Salt.add_salt("Сгенерируй лого на подобии трех прямоугольников, где по середение один выше других, он серый, два по бокам оранжевые, фон белый, а под фигурой небольшая тень. Все 3 прямоугольника соединены побокам"),
         model=models.deepseek_r1_full,
     )
 
@@ -50,7 +60,10 @@ if __name__ == '__main__':
         status = conversation.ask_img(
             prompt=main_prompt,
             width = resolution[0],
-            height = resolution[1]
+            height = resolution[1],
+            img_model=imgmodels.flux_pro
         )
+
+        print(status)
     
     realTools.run(ans.text)

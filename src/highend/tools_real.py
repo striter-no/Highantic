@@ -38,6 +38,7 @@ class RealTools:
         return decorator
     
     def run(self, ans: str):
+        print(ans)
         parsed = gchain.LLMParse.parse(ans)
         print(parsed)
 
